@@ -251,6 +251,149 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             z-index: -1;
         }
+
+        /* Loading Overlay with Animated Gradient */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(-45deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #16213e 75%, #1a1a2e 100%);
+            background-size: 400% 400%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 1;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: gradientShift 8s ease infinite;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Container */
+        .loading-container {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            text-align: center;
+            max-width: 300px;
+        }
+
+        /* Dual Spinner Container */
+        .spinner-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem;
+        }
+
+        /* Outer Spinner */
+        .spinner-outer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top: 3px solid #10b981;
+            border-right: 3px solid #10b981;
+            border-radius: 50%;
+            animation: spinOuter 2.5s linear infinite;
+        }
+
+        /* Inner Spinner */
+        .spinner-inner {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 76px;
+            height: 76px;
+            border: 2px solid transparent;
+            border-bottom: 2px solid #06b6d4;
+            border-left: 2px solid #06b6d4;
+            border-radius: 50%;
+            animation: spinInner 1.8s linear infinite;
+        }
+
+        @keyframes spinOuter {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spinInner {
+            from {
+                transform: rotate(360deg);
+            }
+            to {
+                transform: rotate(0deg);
+            }
+        }
+
+        /* Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #10b981 100%);
+            background-size: 200% 100%;
+            border-radius: 2px;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% {
+                width: 0%;
+                background-position: 0% 0%;
+            }
+            50% {
+                width: 100%;
+                background-position: 100% 0%;
+            }
+            100% {
+                width: 0%;
+                background-position: 100% 0%;
+            }
+        }
+
+        /* Loading Text */
+        .loading-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
     </style>
     <!-- Load Spline Viewer Script in head -->
     <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.13/build/spline-viewer.js"></script>
@@ -259,9 +402,24 @@
     <!-- Fallback background while Spline loads -->
     <div class="spline-loading"></div>
 
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-container">
+            <div class="spinner-container">
+                <div class="spinner-outer"></div>
+                <div class="spinner-inner"></div>
+            </div>
+            <div class="loading-subtext">Loading</div>
+            <div class="loading-text">Plankton si Dokter Tani</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Spline 3D Background -->
     <div class="spline-background">
-        <spline-viewer url="https://prod.spline.design/GGWiHvIplPvqH4Al/scene.splinecode"></spline-viewer>
+        <spline-viewer url="https://prod.spline.design/GGWiHvIplPvqH4Al/scene.splinecode" id="splineViewer"></spline-viewer>
     </div>
         
         <a href="{{ url_for('auth.login') }}" class="btn-get-started">
@@ -291,5 +449,23 @@
     <div class="footer">
         <p>Kelompok Tani Maju Indonesia</p>
     </div>
+
+    <script>
+        // Hide loading overlay when Spline viewer is ready
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const splineViewer = document.getElementById('splineViewer');
+
+        // Listen for Spline viewer ready event
+        if (splineViewer) {
+            splineViewer.addEventListener('load', () => {
+                loadingOverlay.classList.add('hidden');
+            });
+
+            // Fallback: hide loading after 5 seconds even if load event doesn't fire
+            setTimeout(() => {
+                loadingOverlay.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
 </body>
 </html>
